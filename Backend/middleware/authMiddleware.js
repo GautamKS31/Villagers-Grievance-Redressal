@@ -25,7 +25,7 @@ exports.protect = async (req, res, next) => {
 
       next();
     } catch (error) {
-      console.error(error);
+      console.error("Auth middleware error:", error);
       return res.status(401).json({ message: "Not authorized, token failed" });
     }
   }
@@ -49,6 +49,6 @@ exports.userOrAdmin = (req, res, next) => {
   if (req.user && (req.user.role === "user" || req.user.role === "admin")) {
     next();
   } else {
-    res.status(403).json({ message: "Access denied." });
+    res.status(403).json({ message: "Access denied" });
   }
 };

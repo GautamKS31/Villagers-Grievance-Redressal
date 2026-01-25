@@ -4,7 +4,7 @@ import "../styles/LandingPage.css";
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { changeLanguage } = useLanguage();
+  const { language, changeLanguage } = useLanguage();
 
   const handleLanguageSelect = (lang) => {
     changeLanguage(lang);
@@ -14,8 +14,8 @@ const LandingPage = () => {
   return (
     <div className="landing-container">
       <div className="landing-card">
-        <h2 className="title-english">Choose Your Language</h2>
-        <h2 className="title-tamil">உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்</h2>
+        <h1 className="title-en">Choose Your Language</h1>
+        <h1 className="title-ta">உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்</h1>
 
         <div className="language-buttons">
           <button

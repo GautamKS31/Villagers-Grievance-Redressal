@@ -3,20 +3,18 @@ const {
   register,
   userLogin,
   adminLogin,
-  changePassword,
+  getMe,
 } = require("../controllers/authController");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// Registration (direct, no OTP)
+// Public routes
 router.post("/register", register);
-
-// Login routes
 router.post("/login/user", userLogin);
 router.post("/login/admin", adminLogin);
 
-// Change password (for authenticated users)
-router.post("/change-password", protect, changePassword);
+// Protected routes
+router.get("/me", protect, getMe);
 
 module.exports = router;

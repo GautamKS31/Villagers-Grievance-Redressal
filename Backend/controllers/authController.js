@@ -1,25 +1,27 @@
 const User = require("../models/User");
-const {
-  generateToken,
-  generateRefreshToken,
-} = require("../utils/generateToken");
+const { generateToken } = require("../utils/generateToken");
 
-// Direct Registration (without OTP)
+// @desc    Register a new user
+// @route   POST /api/auth/register
+// @access  Public
 exports.register = async (req, res) => {
   try {
     const { fullName, username, phone, village, password, role } = req.body;
 
-    // Validate required fields
+    // Validation
     if (!fullName || !username || !phone || !village || !password) {
-      return res
-        .status(400)
-        .json({ message: "Please provide all required fields" });
+      return res.status(400).json({
+        message: "Please provide all required fields",
+      });
     }
 
-    // Check if username already exists
+    // Check if user already exists
     const userExists = await User.findOne({ username });
+
     if (userExists) {
-      return res.status(400).json({ message: "Username already exists" });
+      return res.status(400).json({
+        message: "Username already exists",
+      });
     }
 
     // Create user
@@ -30,50 +32,71 @@ exports.register = async (req, res) => {
       village,
       password,
       role: role || "user",
-      isVerified: true,
     });
 
-    res.status(201).json({
-      message: "Registration successful! You can now login.",
-    });
+    if (user) {
+      res.status(201).json({
+        message: "User registered successfully",
+        user: {
+          id: user._id,
+          fullName: user.fullName,
+          username: user.username,
+          phone: user.phone,
+          village: user.village,
+          role: user.role,
+        },
+        token: generateToken(user._id),
+      });
+    }
   } catch (error) {
     console.error("Registration error:", error);
-    res.status(500).json({ message: "Server error. Please try again later." });
+    res.status(500).json({
+      message: "Server error. Please try again later.",
+    });
   }
 };
 
-// User Login
+// @desc    Login user
+// @route   POST /api/auth/login/user
+// @access  Public
 exports.userLogin = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Validate input
+    // Validation
     if (!username || !password) {
-      return res
-        .status(400)
-        .json({ message: "Please provide username and password" });
+      return res.status(400).json({
+        message: "Please provide username and password",
+      });
     }
 
-    // Find user
-    const user = await User.findOne({ username });
+    // Find user and explicitly select password field
+    const user = await User.findOne({ username }).select("+password");
+
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({
+        message: "Invalid credentials",
+      });
     }
 
     // Check password
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    const isPasswordMatch = await user.matchPassword(password);
+
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        message: "Invalid credentials",
+      });
     }
 
-    // Generate tokens
-    const token = generateToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    // Check if user role is 'user'
+    if (user.role !== "user") {
+      return res.status(403).json({
+        message: "Access denied. Please use admin login.",
+      });
+    }
 
     res.json({
       message: "Login successful",
-      token,
-      refreshToken,
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -82,45 +105,81 @@ exports.userLogin = async (req, res) => {
         village: user.village,
         role: user.role,
       },
+      token: generateToken(user._id),
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ message: "Server error. Please try again later." });
+    res.status(500).json({
+      message: "Server error. Please try again later.",
+    });
   }
 };
 
-// Admin Login
+// @desc    Login admin
+// @route   POST /api/auth/login/admin
+// @access  Public
 exports.adminLogin = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Validate input
+    // Validation
     if (!username || !password) {
-      return res
-        .status(400)
-        .json({ message: "Please provide username and password" });
+      return res.status(400).json({
+        message: "Please provide username and password",
+      });
     }
 
-    // Find admin user
-    const user = await User.findOne({ username, role: "admin" });
+    // Find user and explicitly select password field
+    const user = await User.findOne({ username }).select("+password");
+
     if (!user) {
-      return res.status(401).json({ message: "Invalid admin credentials" });
+      return res.status(401).json({
+        message: "Invalid credentials",
+      });
     }
 
     // Check password
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid admin credentials" });
+    const isPasswordMatch = await user.matchPassword(password);
+
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        message: "Invalid credentials",
+      });
     }
 
-    // Generate tokens
-    const token = generateToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    // Check if user role is 'admin'
+    if (user.role !== "admin") {
+      return res.status(403).json({
+        message: "Access denied. Admin privileges required.",
+      });
+    }
 
     res.json({
-      message: "Admin login successful",
-      token,
-      refreshToken,
+      message: "Login successful",
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        username: user.username,
+        role: user.role,
+      },
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    console.error("Admin login error:", error);
+    res.status(500).json({
+      message: "Server error. Please try again later.",
+    });
+  }
+};
+
+// @desc    Get current user profile
+// @route   GET /api/auth/me
+// @access  Private
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    res.json({
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -131,37 +190,9 @@ exports.adminLogin = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Admin login error:", error);
-    res.status(500).json({ message: "Server error. Please try again later." });
-  }
-};
-
-// Change Password (authenticated users)
-exports.changePassword = async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res
-        .status(400)
-        .json({ message: "Please provide current and new password" });
-    }
-
-    const user = await User.findById(req.user.id);
-
-    // Verify current password
-    const isMatch = await user.matchPassword(currentPassword);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Current password is incorrect" });
-    }
-
-    // Update password
-    user.password = newPassword;
-    await user.save();
-
-    res.json({ message: "Password changed successfully" });
-  } catch (error) {
-    console.error("Change password error:", error);
-    res.status(500).json({ message: "Server error. Please try again later." });
+    console.error("Get profile error:", error);
+    res.status(500).json({
+      message: "Server error. Please try again later.",
+    });
   }
 };

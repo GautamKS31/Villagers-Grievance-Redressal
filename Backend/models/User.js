@@ -5,27 +5,31 @@ const userSchema = new mongoose.Schema(
   {
     fullName: {
       type: String,
-      required: true,
+      required: [true, "Please provide full name"],
+      trim: true,
     },
     username: {
       type: String,
-      required: true,
+      required: [true, "Please provide username"],
       unique: true,
-    },
-    email: {
-      type: String, // Make email optional
+      lowercase: true,
+      trim: true,
     },
     phone: {
       type: String,
-      required: true,
+      required: [true, "Please provide phone number"],
+      trim: true,
     },
     village: {
       type: String,
-      required: true,
+      required: [true, "Please provide village name"],
+      trim: true,
     },
     password: {
       type: String,
-      required: true,
+      required: [true, "Please provide password"],
+      minlength: 6,
+      select: false,
     },
     role: {
       type: String,
@@ -34,11 +38,12 @@ const userSchema = new mongoose.Schema(
     },
     isVerified: {
       type: Boolean,
-      default: true, // Changed default to true
+      default: false,
     },
-    // Removed OTP fields
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+  },
 );
 
 // Hash password before saving
@@ -50,7 +55,7 @@ userSchema.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Compare password
+// Match password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

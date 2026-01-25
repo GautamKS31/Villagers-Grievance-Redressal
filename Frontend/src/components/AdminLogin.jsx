@@ -5,7 +5,7 @@ import axios from "axios";
 import API_URL from "../config/api";
 import "../styles/Login.css";
 
-const Login = () => {
+const AdminLogin = () => {
   const { t, language, changeLanguage } = useLanguage();
   const navigate = useNavigate();
 
@@ -40,8 +40,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Try user login first
-      const response = await axios.post(`${API_URL}/auth/login/user`, {
+      const response = await axios.post(`${API_URL}/auth/login/admin`, {
         username: formData.username,
         password: formData.password,
       });
@@ -50,35 +49,15 @@ const Login = () => {
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
 
-      // Redirect based on role
-      if (response.data.user.role === "admin") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/user/dashboard");
-      }
+      // Navigate to admin dashboard
+      navigate("/admin/dashboard");
     } catch (err) {
-      // If user login fails, try admin login
-      try {
-        const adminResponse = await axios.post(`${API_URL}/auth/login/admin`, {
-          username: formData.username,
-          password: formData.password,
-        });
-
-        // Store token and user data
-        localStorage.setItem("token", adminResponse.data.token);
-        localStorage.setItem("user", JSON.stringify(adminResponse.data.user));
-
-        // Redirect to admin dashboard
-        navigate("/admin/dashboard");
-      } catch (adminErr) {
-        // Both login attempts failed
-        setError(
-          err.response?.data?.message ||
-            (language === "ta" ?
-              "உள்நுழைவு தோல்வியுற்றது. மீண்டும் முயற்சிக்கவும்."
-            : "Login failed. Please check your credentials."),
-        );
-      }
+      setError(
+        err.response?.data?.message ||
+          (language === "ta" ?
+            "நிர்வாக உள்நுழைவு தோல்வியுற்றது"
+          : "Admin login failed. Please check your credentials."),
+      );
     } finally {
       setLoading(false);
     }
@@ -111,7 +90,7 @@ const Login = () => {
       </button>
 
       <div className="login-card">
-        <h2>{t("userLogin")}</h2>
+        <h2>{language === "ta" ? "நிர்வாக உள்நுழைவு" : "Admin Login"}</h2>
 
         {error && <div className="error-message">{error}</div>}
 
@@ -124,7 +103,7 @@ const Login = () => {
               value={formData.username}
               onChange={handleChange}
               placeholder={
-                language === "ta" ? "பயனர்பெயரை உள்ளிடவும்" : "Enter username"
+                language === "ta" ? "நிர்வாக பயனர்பெயர்" : "Admin username"
               }
               required
             />
@@ -138,7 +117,7 @@ const Login = () => {
               value={formData.password}
               onChange={handleChange}
               placeholder={
-                language === "ta" ? "கடவுச்சொல்லை உள்ளிடவும்" : "Enter password"
+                language === "ta" ? "நிர்வாக கடவுச்சொல்" : "Admin password"
               }
               required
             />
@@ -154,12 +133,14 @@ const Login = () => {
         </form>
 
         <div className="register-link">
-          {t("noAccount")}{" "}
-          <span onClick={() => navigate("/register")}>{t("register")}</span>
+          {language === "ta" ? "புதிய நிர்வாகியா?" : "New Admin?"}{" "}
+          <span onClick={() => navigate("/admin-register")}>
+            {language === "ta" ? "பதிவு செய்க" : "Register here"}
+          </span>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default AdminLogin;
