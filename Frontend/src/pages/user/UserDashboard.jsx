@@ -194,26 +194,24 @@ const UserDashboard = () => {
                     {grievance.status}
                   </span>
                 </div>
-
                 <div className="grievance-meta">
                   <span className="category">{grievance.category}</span>
                   <span
                     className="urgency"
-                    style={{ color: getUrgencyColor(grievance.urgency) }}
+                    style={{
+                      backgroundColor: getUrgencyColor(grievance.urgency),
+                      color: "white",
+                    }}
                   >
                     {grievance.urgency}
                   </span>
                 </div>
-
-                <p className="grievance-description">
-                  {grievance.description.substring(0, 100)}...
-                </p>
-
+                <p className="grievance-description">{grievance.description}</p>
                 <div className="grievance-footer">
                   <span className="location">
-                    📍 {grievance.location.address}
+                    📍 {grievance.location?.address || "Location not available"}
                   </span>
-                  <span className="date">
+                  <span>
                     {new Date(grievance.createdAt).toLocaleDateString()}
                   </span>
                 </div>
