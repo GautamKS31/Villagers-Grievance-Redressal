@@ -177,9 +177,9 @@ const AdminGrievanceDetail = () => {
           </div>
 
           <div className="info-section">
-            <h3>{language === "ta" ? "இருப்பிடம்" : "Location"}</h3>
-            <p>📍 {grievance.location.address}</p>
-            {grievance.location.coordinates && (
+            <h3>📍 {language === "ta" ? "இருப்பிடம்" : "Location"}</h3>
+            <p>{grievance.location?.address || "Location not available"}</p>
+            {grievance.location?.coordinates && (
               <a
                 href={`https://www.google.com/maps?q=${grievance.location.coordinates[1]},${grievance.location.coordinates[0]}`}
                 target="_blank"

@@ -6,14 +6,8 @@ const User = require("../models/User");
 // @access  Private (User)
 exports.createGrievance = async (req, res) => {
   try {
-    const {
-      title,
-      description,
-      category,
-      urgency,
-      location,
-      images,
-    } = req.body;
+    const { title, description, category, urgency, location, images } =
+      req.body;
 
     // Validate required fields
     if (!title || !description || !category || !urgency || !location) {
@@ -49,7 +43,7 @@ exports.createGrievance = async (req, res) => {
 
     const populatedGrievance = await Grievance.findById(grievance._id).populate(
       "user",
-      "fullName username phone village"
+      "fullName username phone village",
     );
 
     res.status(201).json({
@@ -172,50 +166,42 @@ exports.getAllGrievances = async (req, res) => {
 // @access  Private (Admin)
 exports.updateGrievanceStatus = async (req, res) => {
   try {
+    const { id } = req.params;
     const { status, adminNotes } = req.body;
 
-    if (!status) {
-      return res.status(400).json({ message: "Please provide status" });
-    }
-
-    const grievance = await Grievance.findById(req.params.id);
+    const grievance = await Grievance.findById(id);
 
     if (!grievance) {
       return res.status(404).json({ message: "Grievance not found" });
     }
 
-    // Update status
+    // Update only the fields we need
     grievance.status = status;
     if (adminNotes) {
       grievance.adminNotes = adminNotes;
     }
 
-    // Set acceptedBy and acceptedAt when status is Accepted
-    if (status === "Accepted" && !grievance.acceptedBy) {
-      grievance.acceptedBy = req.user.id;
+    // Set timestamps based on status
+    if (status === "Accepted" && !grievance.acceptedAt) {
       grievance.acceptedAt = Date.now();
+      grievance.acceptedBy = req.user.id;
     }
 
-    // Set resolvedAt when status is Resolved
     if (status === "Resolved" && !grievance.resolvedAt) {
       grievance.resolvedAt = Date.now();
     }
 
-    await grievance.save();
+    // Save with validation disabled for unchanged fields
+    await grievance.save({ validateModifiedOnly: true });
 
-    const updatedGrievance = await Grievance.findById(grievance._id)
+    const updatedGrievance = await Grievance.findById(id)
       .populate("user", "fullName username phone village")
-      .populate("acceptedBy", "fullName username");
+      .populate("acceptedBy", "fullName");
 
-    res.json({
-      message: "Grievance status updated successfully",
-      grievance: updatedGrievance,
-    });
+    res.json(updatedGrievance);
   } catch (error) {
     console.error("Update grievance status error:", error);
-    res.status(500).json({
-      message: "Server error. Please try again later.",
-    });
+    res.status(500).json({ message: "Failed to update grievance status" });
   }
 };
 
@@ -252,9 +238,7 @@ exports.addRating = async (req, res) => {
 
     // Check if already rated
     if (grievance.rating) {
-      return res
-        .status(400)
-        .json({ message: "Grievance already rated" });
+      return res.status(400).json({ message: "Grievance already rated" });
     }
 
     grievance.rating = rating;
